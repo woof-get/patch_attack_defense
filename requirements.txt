@@ -1,0 +1,18 @@
+# 目标检测对抗贴片攻防对抗赛 - 后端依赖
+# 核心
+torch>=2.0
+torchvision>=0.15
+numpy
+Pillow
+# 配置/数据/指标
+pyyaml
+requests
+tqdm
+scikit-learn
+pandas
+matplotlib
+# 可选(选手自定义攻防可能用到)
+# opencv-python-headless
+# pycocotools
+# timm
+# ultralytics  # 若要用 YOLO 作为 Model-A

@@ -1,0 +1,89 @@
+# ============================================================
+# 目标检测对抗贴片攻防对抗赛 - 主配置
+# ============================================================
+# 所有路径相对本文件所在目录(项目根 patch_attack_defense/)。
+# 赛题公式见 README / judge/metrics.py。patch_size 赛题内部不一致
+# (§11.1/§18.1=32, §15/§16=128), 此处统一为单一参数, 由接口透传。
+
+# ---------- 数据集 ----------
+dataset:
+  # 后端自动探测: 优先 coco, 缺失则用 synthetic。可强制:
+  #   coco       -> 读取 data/coco (需先跑 main.py prepare-data --coco)
+  #   synthetic  -> 合成数据(无需下载, CPU 友好, 默认)
+  #   auto       -> 自动探测可用数据集
+  source: auto
+  root: data/coco
+  synthetic_root: data/synthetic
+  # 主赛道目标类别(COCO 类别名 -> 内部 id)
+  # 公开阶段建议仅 person; 隐藏阶段 person+car+bus。默认轻量: person
+  target_classes: ["person"]
+  # 数据划分大小(每类 / 每子集上限, 控制运行时长)
+  attack_train_size: 200
+  attack_val_size: 50
+  defense_train_size: 300     # 含 50% clean + 50% patched
+  defense_val_size: 100
+  hidden_test_size: 100
+  image_size: 320             # 统一送入检测器的输入边长(正方形)
+
+# ---------- 目标检测器 ----------
+detectors:
+  # Model-A: 公开白盒检测器(攻击方可前向+反传梯度)
+  # Model-B: 隐藏迁移检测器(架构差异更大, 默认关闭以省下载/CPU)
+  model_a:
+    type: fasterrcnn_mobilenet_v3_large_fpn   # torchvision 预训练
+    weights: DEFAULT
+    score_thresh: 0.25
+    nms_iou: 0.45
+  model_b:
+    enabled: false
+    type: fasterrcnn_resnet50_fpn
+    weights: DEFAULT
+    score_thresh: 0.25
+    nms_iou: 0.45
+  # 评测最终得分对启用检测器取平均
+  device: cpu                  # 本环境 torch 为 CPU 版
+
+# ---------- 攻击贴片约束 ----------
+attack:
+  patch_size: 64               # 输出 (3, patch_size, patch_size), float [0,1]
+  max_patch_area_ratio: 0.50   # 贴片相对目标框最大面积比 (赛题建议 0.20; 此处 0.50 利于演示攻击效果, 可调)
+  # 裁判渲染参数(对齐 §12)
+  rotation_range: [-15, 15]    # 度
+  scale_range: [0.85, 1.15]
+  position_inner_ratio: 0.60   # 贴片中心限制在目标框中央 60% 区域
+  color_jitter: 0.10           # 轻微亮度/对比抖动幅度
+
+# ---------- 攻击评测阈值 ----------
+eval:
+  det_iou_thresh: 0.50         # Clean Detectable 判定 IoU
+  det_score_thresh: 0.25       # Clean Detectable 判定置信度 (= detectors.score_thresh)
+  attack_qual_gain: 0.40       # 攻击资格线: AttackGain >=
+  attack_qual_hide: 0.50       # 攻击资格线: HideRate_adv >=
+  defense_qual_fpr: 0.10       # 防御资格线: FPR <=
+  defense_qual_tpr: 0.70       # 防御资格线: TPR_baseline >=
+
+# ---------- 内置攻防池 ----------
+methods:
+  attacks: [random_noise, checkerboard, gray_patch, gradient_patch]
+  defenses: [resnet18_classifier, mobilenetv3_classifier, frequency_classifier]
+
+# ---------- 训练/优化超参(默认小规模, CPU 友好) ----------
+training:
+  attack:
+    iters: 40                  # 梯度贴片优化步数
+    lr: 0.03
+    batch_size: 4
+    tv_weight: 0.01            # 全变分正则
+  defense:
+    epochs: 5
+    batch_size: 32
+    lr: 0.001
+    backbone_pretrained: true  # 使用 ImageNet 预训练骨干(首次会下载)
+
+# ---------- 运行 ----------
+run:
+  seed: 42
+  num_workers: 0               # Windows + CPU 建议 0
+  output_dir: results
+  save_images: false           # 是否落盘渲染样本(调试用)
+  max_eligible_targets: 100    # eligible 目标上限, 控制检测推理次数
