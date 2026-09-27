@@ -1,0 +1,4 @@
+# 防御提交配置
+defense:
+  backbone: resnet18
+  model_path: model/weights.pt

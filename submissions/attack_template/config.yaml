@@ -1,0 +1,7 @@
+# 攻击提交配置
+attack:
+  patch_size: 64
+# 自定义超参 (可选)
+hyper:
+  iters: 50
+  lr: 0.03

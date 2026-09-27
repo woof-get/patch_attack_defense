@@ -1,0 +1,4 @@
+# 防御方依赖 (按需补充)
+numpy
+torch
+torchvision
