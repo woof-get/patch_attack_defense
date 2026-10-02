@@ -92,14 +92,14 @@ python main.py prepare-data --coco --full
 
 ## 五、攻防解耦机制（核心）
 
-### 攻击接口（`attacks/`，赛题 §15-§18）
+### 攻击接口（`attacks/`）
 ```python
 def attack(env, task) -> {"patch": ndarray (3, patch_size, patch_size) float[0,1]}
 # task = {images, annotations, target_class, patch_size, max_patch_area_ratio, detector}
 ```
 攻击方**不**返回改图/位置/缩放/旋转。同一轮所有测试样本用同一张贴片（Universal）。
 
-### 防御接口（`defenses/`，赛题 §27-§30）
+### 防御接口（`defenses/`）
 ```python
 class DefenseModel:
     def __init__(self, model_path): ...
@@ -108,7 +108,7 @@ class DefenseModel:
 ```
 防御方只接收 image，不获框/类别/贴片/检测预测，不访问检测器（`DefenseEnv` 不暴露检测器）。
 
-### 裁判统一渲染（`judge/patch_renderer.py`，赛题 §12/§19，不提供给防御方）
+### 裁判统一渲染（`judge/patch_renderer.py`，）
 ```python
 apply_patch(image, target_bbox, patch, rng)   # 贴片中心落目标框中央 60%；旋转±15°；缩放 0.85-1.15；颜色抖动
 apply_occlusion(image, bbox, params, rng)     # 相同参数渲染 gray/black/white/noise/texture 自然遮挡基线
@@ -140,7 +140,7 @@ apply_occlusion(image, bbox, params, rng)     # 相同参数渲染 gray/black/wh
 
 ---
 
-## 七、评测指标（严格对齐赛题 §10/§20-§42）
+## 七、评测指标（严格对齐赛题 ）
 
 **攻击**：`Recall_clean/adv/occ`、`HideRate=1-Recall`、
 `AttackGain=max(0,(Hide_adv-Hide_occ)/(1-Hide_occ+ε))`、`ConfidenceDrop`、
